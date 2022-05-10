@@ -135,6 +135,115 @@ We are calling the `Errorf` method on our `t` which will print out a message and
 
 You can read more about the placeholder strings in the [fmt go doc][4].
 
+## Hello, YOU
+
+Now that we have a test we can iterate on our software safely.
+
+In the last example we wrote the test *after* the code had been written just so you could get an example of how to write a test and declare a function. From this point on we will be *writing test first*.
+
+Our next requirement is to let us specify the recipient of the greeting.
+
+Let's start by capturing these requirements in a test. This is basic test driven development and allow us to make sure our test is *actually* testing what we want. When you retrospectively write tests there is the risk that your test may continue to pass even if the code doesn't as intended.
+
+```go
+package main
+
+import "testing"
+
+func TestHello(t *testing.T) {
+	got := Hello("Chris")
+	want := "Hello, Chris"
+
+	if got != want {
+		t.Errorf("got %q want %q", got, want)
+	}
+}
+```
+
+Now run `go test`, you should have a compilation error
+
+```
+# hello [hello.test]
+./hello_test.go:6:15: too many arguments in call to Hello
+        have (string)
+        want ()
+FAIL    hello [build failed]
+```
+
+When using a statically typed language like Go it is important to *listen to compiler*. The compiler understands how your code should snap together and work, so you don't have to.
+
+In this case the compiler is telling you what you need to do to continue. We have to change our function `Hello` to accept an argument.
+
+Edit the ``Hello`` function to accept an argument of type string
+
+```go
+func Hello(name string) string {
+	return "Hello, world"
+}
+```
+
+If you try and run your tests again your ``hello.go`` will fail to compile because you are not passing an argument. Send in "world" to make it compile.
+
+```go
+func main() {
+	fmt.Println(Hello("world"))
+}
+```
+
+Now when you run your tests you should see something like
+
+```
+--- FAIL: TestHello (0.00s)
+    hello_test.go:10: got "Hello, world" want "Hello, Chris"
+FAIL
+exit status 1
+FAIL    hello   0.294s
+```
+
+We finally have a compiling program but it is not meeting our requirements according the test.
+
+Let's make the test pass by using the name argument and concatenate it with ``Hello,``
+
+```go
+func Hello(name string) string {
+	return "Hello, " + name
+}
+```
+
+When you run the tests they should now pass. Normally as part of the TDD cycle we should now *refactor*.
+
+### A note on source control
+
+At this point, if you are using a source control (which you should!) I would ``commit``the code as it is. We have working software backed by a test.
+
+I *wouldn't* to push master (main) though, because I plan to refactor next. It is nice to commit at this point in case you somehow get into a mess with refactoring - you can always go back to the working version.
+
+There's not a lot to refactor here, we can introduce another language feature, *constants*.
+
+### Constants
+
+Constants are defined like so
+
+```go
+const englishHelloPrefix = "Hello, "
+```
+
+We can now refactor our code
+
+```go
+const englishHelloPrefix = "Hello, "
+
+func Hello(name string) string {
+	return englishHelloPrefix + name
+}
+```
+
+After refactoring, re-run your tests to make sure haven't broken anything.
+
+Constants should improve performance of your application as it saves you creating the ``"Hello, "`` string instance every time ``Hello`  is called.
+
+To be clear, the performance boost is incredibly negligible for this example! But it's wroth thinking about creating constants to capture the meaning of values and sometimes to aid performance. 
+
 [1]: https://en.m.wikipedia.org/wiki/%22Hello,_World!%22_program
 [2]: https://blog.golang.org/go116-module-changes
 [3]: https://golang.org/doc/modules/gomod-ref
