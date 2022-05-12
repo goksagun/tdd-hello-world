@@ -548,6 +548,31 @@ A few new concepts:
 - ``default`` in the switch case will be branched to if none of the other ``case``statements match.
 - The function name starts with a lowercase letter. In Go public functions starts with a capital letter and private ones starts with a lowercase. We don't want the internals of our algorithm to be exposed to the world, so we made this function private.
 
+---
+
+## Wrapping up
+
+Who knew you could get so much out of ``Hello, world``?
+
+By now you should have some understanding of:
+
+### Some of Go's syntax around
+
+- Writing tests
+- Declaring functions, with arguments and return types
+- `if`, `const` and `switch`
+- Declaring variables and constants
+
+### The TDD process and *why* the steps are important
+
+- *Write a failing test and see it fail* so we know we have written a *relevant* test for our requirements and seen that it produces an *easy to understand description of the failure*
+- Writing the smallest amount of code to make it pass so we know we have working software
+- *Then refactor*, backed with the safety of our tests to ensure we have well-crafted code that is easy to work with
+
+In our case we've gone from ``Hello()`` to ``Hello("name")``, to ``Hello("name", "French")`` in small, easy to understand steps.
+
+This is of course trivial compared to "real world" software but the principles still stand. TDD is a skill that needs practise to develop, but by breaking problems down into smaller components that you cna test, you will have a much easier time writing software.
+
 [1]: https://en.m.wikipedia.org/wiki/%22Hello,_World!%22_program
 [2]: https://blog.golang.org/go116-module-changes
 [3]: https://golang.org/doc/modules/gomod-ref
