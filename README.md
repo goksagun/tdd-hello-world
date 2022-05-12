@@ -242,7 +242,117 @@ After refactoring, re-run your tests to make sure haven't broken anything.
 
 Constants should improve performance of your application as it saves you creating the ``"Hello, "`` string instance every time ``Hello`  is called.
 
-To be clear, the performance boost is incredibly negligible for this example! But it's wroth thinking about creating constants to capture the meaning of values and sometimes to aid performance. 
+To be clear, the performance boost is incredibly negligible for this example! But it's wroth thinking about creating constants to capture the meaning of values and sometimes to aid performance.
+
+---
+
+## Hello, world... again
+
+The next requirement is when our function is called with an empty string it defaults to printing "Hello, world", rather than "Hello, ".
+
+Start by writing a failing test
+
+```go
+func TestHello(t *testing.T) {
+	t.Run("saying hello to people", func(t *testing.T) {
+		got := Hello("Chris")
+		want := "Hello, Chris"
+
+		if got != want {
+			t.Errorf("got %q want %q", got, want)
+		}
+	})
+	t.Run("say 'Hello, World' when an empty string is supplied", func(t *testing.T) {
+		got := Hello("")
+		want := "Hello, World"
+
+		if got != want {
+			t.Errorf("got %q want %q", got, want)
+		}
+	})
+}
+```
+
+Here we are introducing another tool in our testing arsenal, subtests. Sometimes it is useful to group tests around a "thing" and then have subtests describing different scenarios.
+
+A benefit of this approach is you can set up shared code that can be used in the other tests.
+
+There is repeated code when we check if the message is what we expect.
+
+Refactoring is not *just* for the production code!
+
+It is important that your tests are *clear specifications* of what the code needs to do.
+
+We can and should refactor our tests.
+
+```go
+func TestHello(t *testing.T) {
+	assertCorrectMessage := func(t testing.TB, got, want string) {
+		t.Helper()
+		if got != want {
+			t.Errorf("got %q want %q", got, want)
+		}
+	}
+
+	t.Run("saying hello to people", func(t *testing.T) {
+		got := Hello("Chris")
+		want := "Hello, Chris"
+		assertCorrectMessage(t, got, want)
+	})
+	t.Run("empty string defaults to 'World'", func(t *testing.T) {
+		got := Hello("")
+		want := "Hello, World"
+		assertCorrectMessage(t, got, want)
+	})
+}
+```
+
+What have we done here?
+
+We've refactored our assertion into a function. This reduces duplication and improves readability of our tests. In Go you can declare functions inside other functions and assign them to variables. You can then call them, just like normal functions. We need to pass in ``t *testing.T`` so that we can tell the test code to fail when we need to.
+
+For helper functions, it's a good idea to accept a ``testing.TB`` which is an interface that ``*testing.T``and ``*testing.B``both satisfy, so you can call helper functions from a test, or a benchmark.
+
+``t.Helper()`` is needed to tell the test suite that this method is a helper. By doing this when it fails the line number reported will be in our *function call* rather than inside our test helper. This will help other developers track down problems easier. If you still don't understand, comment it out, make a test fail and observe the test output. Comments in GO are a great way to add additional information to your code, or in this case, a quick way to tell the compiler to ignore a line. You can comment out the ``t.Helper()`` code by adding two forward slasshes ``//`` at the beginning of the line. You should see that line turn grey or change to another color that the rest of your code to indicate it's now commented out.
+
+Now that we have a well-written failing test, let's fix the code, using an  `ìf`.
+
+```go
+const englishHelloPrefix = "Hello, "
+
+func Hello(name string) string {
+	if name == "" {
+		name = "World"
+	}
+	return englishHelloPrefix + name
+}
+```
+
+If we run out tests we should see it satisfies the new requirement and we haven't accidentally broken the other functionality.
+
+### Back to source control
+Now we are happy with the code I would amend the previous commit so we only check in the lovely version of our code with its test.
+
+### Discipline
+
+Let's go over the cycle again
+- Write a test
+- Make compiler pass
+- Run the test, see that if fails and check error message is meaningful
+- Write enough code to make the test pass
+- Refactor
+
+On the face of it this may seem tedious but sticking to the feedback loop is important.
+
+Not only does it ensure that you have *relevant tests*, it helps ensure *you design good software* by refactoring with the safety of test.
+
+Seeing the test fail is an important check because it also lets you see what the error message looks like. As a software developer it can be very hard to work with a codebase when failing tests do not give a clear idea as what the problem is.
+
+By ensuring your tests are *fast* and setting up your tools so that running tests is simple you can get in to a state of flow when writing your code.
+
+By not writing tests you are committing to manually checking your code by running your software which breaks your state of flow and you won't be saving yourself any time, especially in the long run.
+
+
 
 [1]: https://en.m.wikipedia.org/wiki/%22Hello,_World!%22_program
 [2]: https://blog.golang.org/go116-module-changes
