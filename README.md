@@ -352,7 +352,201 @@ By ensuring your tests are *fast* and setting up your tools so that running test
 
 By not writing tests you are committing to manually checking your code by running your software which breaks your state of flow and you won't be saving yourself any time, especially in the long run.
 
+---
 
+## Keep going! More requirements
+
+Goodness me, we have more requirements. We now need to support a second parameter, specifying the language of the greeting. If a language is passed in that we do not recognise, just default to English.
+
+We should be confident that we can use TDD to flesh out this functionality easily!
+
+Write a test for a user passing in Spanish. Add it to the existing suite.
+
+```go
+	t.Run("in Spanish", func(t *testing.T) {
+		got := Hello("Elodie", "Spanish")
+		want := "Hola, Elodie"
+		assertCorrectMessage(t, got, want)
+	})
+```
+
+Remember not to cheat! *Test first*. When you try and run the test, the compiler *should* complain because you are calling ``Hello`` with two arguments rather than one.
+
+```
+# hello [hello.test]
+./hello_test.go:14:26: too many arguments in call to Hello
+        have (string, string)
+        want (string)
+FAIL    hello [build failed]
+```
+
+Fix the compilation problems by adding another string argument to ``Hello``
+
+```go
+func Hello(name string, language string) string {
+	if name == "" {
+		name = "World"
+	}
+	return englishHelloPrefix + name
+}
+
+func main() {
+    fmt.Println(Hello("world", ""))
+}
+```
+
+When you try run the test again it will complain about not passing enough arguments to ``Hello`` in your other tests and in ``hello.go``
+
+```
+# hello [hello.test]
+./hello.go:15:20: not enough arguments in call to Hello
+        have (string)
+        want (string, string)
+./hello_test.go:19:16: not enough arguments in call to Hello
+        have (string)
+        want (string, string)
+./hello_test.go:24:16: not enough arguments in call to Hello
+        have (string)
+        want (string, string)
+FAIL    hello [build failed]
+```
+
+Fix them by passing through empty strings. Now all your tests should compile and *pass*, apart from our new scenario.
+
+```
+--- FAIL: TestHello (0.00s)
+    --- FAIL: TestHello/in_Spanish (0.00s)
+        hello_test.go:16: got "Hello, Elodie" want "Hola, Elodie"
+FAIL
+exit status 1
+FAIL    hello   0.332s
+```
+
+We can use `ìf` here to check to language equal to "Spanish" and if so change the message
+
+```go
+func Hello(name string, language string) string {
+	if name == "" {
+		name = "World"
+	}
+
+	if language == "Spanish" {
+		return "Hola, " + name
+	}
+	return englishHelloPrefix + name
+}
+```
+
+The test should now pass.
+
+Now it is time to *refactor*. You should see some problems in the code, "magic" strings, some of which are repeated. Try and refactor it yourself, with every change make sure you re-run the tests to make sure your refactoring isn't breaking anything.
+
+```go
+const spanish = "Spanish"
+const englishHelloPrefix = "Hello, "
+const spanishHelloPrefix = "Hola, "
+
+func Hello(name string, language string) string {
+	if name == "" {
+		name = "World"
+	}
+
+	if language == spanish {
+		return spanishHelloPrefix + name
+	}
+	return englishHelloPrefix + name
+}
+```
+
+### French
+
+- Write a test asserting that if you pass in ``"French`` you get ``Bonjour, ``
+- See it fail, check the error message is easy to read
+- Do the smallest reasonable change in the code
+
+You may have written something that looks roughly like this
+
+```go
+const spanish = "Spanish"
+const french = "French"
+const englishHelloPrefix = "Hello, "
+const spanishHelloPrefix = "Hola, "
+const frenchHelloPrefix = "Bonjour, "
+
+func Hello(name string, language string) string {
+    if name == "" {
+        name = "World"
+    }
+
+    if language == spanish {
+        return spanishHelloPrefix + name
+    }
+    if language == french {
+        return frenchHelloPrefix + name
+    }
+    return englishHelloPrefix + name
+}
+```
+
+### ``switch``
+
+When you have lots of `if` statements checking a particular value it is common to use a ``switch``statement instead. We can use ``switch``to refactor the code to make it easier to read and more extensible if we wish to add more language support later
+
+```go
+func Hello(name string, language string) string {
+	if name == "" {
+		name = "World"
+	}
+
+	prefix := englishHelloPrefix
+
+	switch language {
+	case french:
+		prefix = frenchHelloPrefix
+	case spanish:
+		prefix = spanishHelloPrefix
+	}
+
+	return prefix + name
+}
+```
+
+Write a test to now include a greeting in the language of your choice and you should see how simple it is to extend our *amazing* function.
+
+### one...last...refactor?
+
+You could argue that maybe our function is getting a little big. The simplest refactor for this would be to extract out some functionality into another function.
+
+```go
+func Hello(name string, language string) string {
+	if name == "" {
+		name = "World"
+	}
+
+	return greetingPrefix(language) + name
+}
+
+func greetingPrefix(language string) (prefix string) {
+	switch language {
+	case french:
+		prefix = frenchHelloPrefix
+	case spanish:
+		prefix = spanishHelloPrefix
+	default:
+		prefix = englishHelloPrefix
+	}
+	return
+}
+```
+
+A few new concepts:
+- In our function signature we have made a *named return value* ``(prefix string)``.
+- This will create a variable called ``prefix`` in your function.
+  - It will be assigned the "zero" value. This depends on the type, for example `ìnt`s aer 0 and for `string`s it is `""`.
+  - You can return whatever it's set to by just calling ``return`` rather than ``return prefix``.
+  - This will display in the Go Doc for your function so it can make the intent of your code clear.
+- ``default`` in the switch case will be branched to if none of the other ``case``statements match.
+- The function name starts with a lowercase letter. In Go public functions starts with a capital letter and private ones starts with a lowercase. We don't want the internals of our algorithm to be exposed to the world, so we made this function private.
 
 [1]: https://en.m.wikipedia.org/wiki/%22Hello,_World!%22_program
 [2]: https://blog.golang.org/go116-module-changes
